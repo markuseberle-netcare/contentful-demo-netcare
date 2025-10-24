@@ -1,5 +1,5 @@
 {
-  "name": "contentful-next-demo",
+  "name": "contentful-demo-netcare",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,14 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@contentful/rich-text-react-renderer": "^15.24.4",
-    "@contentful/rich-text-types": "^16.6.5",
+    "@contentful/rich-text-react-renderer": "^15.22.3",
+    "@contentful/rich-text-types": "^16.4.3",
     "contentful": "^10.6.8",
     "next": "14.2.5",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^20.14.9",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
