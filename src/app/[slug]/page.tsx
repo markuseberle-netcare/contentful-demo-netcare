@@ -18,16 +18,20 @@ async function fetchPage(slug: string, preview = false) {
 
 function renderBlock(block: any) {
   const ct = block?.sys?.contentType?.sys?.id;
-  if (ct === 'banner') return <Banner key={block.sys.id} data={block} />;
-  if (ct === 'teaser') return <Teaser key={block.sys.id} data={block} />;
-  if (ct === 'richTextBlock') return <RichTextBlock key={block.sys.id} data={block} />;
+  if (ct === 'banner') return <Banner key={block.sys?.id} data={block} />;
+  if (ct === 'teaser') return <Teaser key={block.sys?.id} data={block} />;
+  if (ct === 'richTextBlock') return <RichTextBlock key={block.sys?.id} data={block} />;
   return null;
 }
 
 export default async function Page({ params }: { params: { slug: string } }) {
   const preview = process.env.NEXT_PUBLIC_ENABLE_PREVIEW === 'true';
   const page = await fetchPage(params.slug, preview);
-  const blocks = page?.fields?.blocks || [];
+
+  // 👇 Sicherstellen, dass blocks ein Array ist
+  const rawBlocks: any = (page as any)?.fields?.blocks;
+  const blocks: any[] = Array.isArray(rawBlocks) ? rawBlocks : [];
+
   return (
     <main className="grid gap-6">
       {blocks.map((b: any) => renderBlock(b))}
