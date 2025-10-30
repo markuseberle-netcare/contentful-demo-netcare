@@ -34,7 +34,10 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
   return (
     <main className="grid gap-6">
-      {blocks.map((b: any) => renderBlock(b))}
+  {Array.isArray(blocks)
+    ? blocks.map((b: any) => renderBlock(b))
+    : <p style={{ color: 'gray' }}>No blocks found or invalid structure.</p>}
     </main>
+
   );
 }
