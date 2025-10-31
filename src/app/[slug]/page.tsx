@@ -1,5 +1,6 @@
 import { getClient } from '@/lib/contentful';
-import GenericBlock from '@/components/GenericBlock';
+import GenericBlock from '../../components/GenericBlock';
+
 
 export const revalidate = 60;
 
