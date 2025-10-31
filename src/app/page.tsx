@@ -2,6 +2,8 @@ import { getClient } from '@/lib/contentful';
 import Banner from '@/components/Banner';
 import Teaser from '@/components/Teaser';
 import RichTextBlock from '@/components/RichTextBlock';
+import GenericBlock from '../components/GenericBlock';
+
 
 export const revalidate = 60;
 
