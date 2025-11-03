@@ -24,7 +24,7 @@ export default function GenericBlock({ entry }: { entry: any }) {
   if (ct === 'componentHeroBanner') {
     return (
       <section className="rounded-2xl p-8 shadow border">
-        {imgUrl && <img src={imgUrl} alt={title} className="w-full h-64 object-cover rounded-xl mb-4" />}
+        {imgUrl && <img src={imgUrl} alt={title} className="w-full h-96 object-cover rounded-xl mb-4" />}
         <h2 className="text-3xl font-semibold mb-2">{title}</h2>
         {subtitle && <p className="text-lg opacity-80 mb-3">{subtitle}</p>}
         {ctaLabel && ctaUrl && (
