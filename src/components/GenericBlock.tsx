@@ -26,7 +26,6 @@ function pickImageUrl(f: any): string | undefined {
 }
 
 function pickRichGeneric(f: any): Document | undefined {
-  // Priorität: bodyText (Duplex), dann weitere häufige Felder
   const keys = ['bodyText', 'body', 'content', 'copy', 'text', 'richText'];
   for (const k of keys) {
     const v = f?.[k];
@@ -53,6 +52,23 @@ function pickPlainGeneric(f: any): string | undefined {
   return undefined;
 }
 
+/** CTA: Label + Href ermitteln (inkl. Reference `targetPage` → /{slug}) */
+function pickCta(f: any): { label?: string; href?: string } {
+  const label: string | undefined = f?.ctaLabel || f?.ctaText;
+
+  let href: string | undefined = f?.ctaUrl || f?.ctaLink || f?.url;
+
+  // Reference auf eine Page: slug → /slug
+  if (!href) {
+    const tp = f?.targetPage;
+    if (tp?.sys?.type === 'Entry') {
+      const slug: string | undefined = tp?.fields?.slug || tp?.fields?.pageSlug;
+      if (slug) href = `/${slug.replace(/^\/+/, '')}`;
+    }
+  }
+  return { label, href };
+}
+
 /** Component */
 export default function GenericBlock({ entry }: { entry: any }) {
   const ct: string | undefined = entry?.sys?.contentType?.sys?.id;
@@ -63,10 +79,9 @@ export default function GenericBlock({ entry }: { entry: any }) {
     f?.title || f?.heading || f?.headline || f?.internalName || f?.pageName || '';
   const subtitle: string = f?.subline || f?.subheading || f?.eyebrow || '';
 
-  const ctaLabel: string | undefined = f?.ctaLabel || f?.ctaText;
-  const ctaUrl: string | undefined = f?.ctaUrl || f?.ctaLink || f?.url;
+  const { label: ctaLabel, href: ctaHref } = pickCta(f);
 
-  /** HERO (volle Breite) – unverändert */
+  /** HERO (volle Breite) */
   if (ct === 'componentHeroBanner') {
     return (
       <section className="col-span-full rounded-2xl p-0 shadow border">
@@ -80,8 +95,8 @@ export default function GenericBlock({ entry }: { entry: any }) {
         <div className="p-6">
           {title && <h2 className="text-3xl md:text-4xl font-semibold mb-2">{title}</h2>}
           {subtitle && <p className="text-lg opacity-80 mb-3">{subtitle}</p>}
-          {ctaLabel && ctaUrl && (
-            <a className="inline-block rounded-xl px-4 py-2 border" href={ctaUrl}>
+          {ctaLabel && ctaHref && (
+            <a className="inline-block rounded-xl px-4 py-2 border" href={ctaHref}>
               {ctaLabel}
             </a>
           )}
@@ -90,7 +105,7 @@ export default function GenericBlock({ entry }: { entry: any }) {
     );
   }
 
-  /** DUPLEX – Standard jetzt GESTAPELT (Bild oben, Text unten) */
+  /** DUPLEX – gestapelt (Bild oben, Text unten) */
   if (ct === 'componentDuplex') {
     const body: Document | undefined = f?.bodyText || pickRichGeneric(f);
     const plain = pickPlainGeneric(f);
@@ -125,9 +140,9 @@ export default function GenericBlock({ entry }: { entry: any }) {
             plain && <p className="opacity-90">{plain}</p>
           )}
 
-          {ctaLabel && ctaUrl && (
+          {ctaLabel && ctaHref && (
             <div className="mt-4">
-              <a className="inline-block rounded-xl px-4 py-2 border" href={ctaUrl}>
+              <a className="inline-block rounded-xl px-4 py-2 border" href={ctaHref}>
                 {ctaLabel}
               </a>
             </div>
@@ -156,11 +171,7 @@ export default function GenericBlock({ entry }: { entry: any }) {
     );
   }
 
-  /**
-   * INFOBLOCK o. ä. GENERISCHE TEASER
-   * – Stets gestapelt: Bild oben, darunter Titel, Body/Plain, CTA
-   * – Rich-Text aus üblichen Feldern, sonst Plain-Text
-   */
+  /** GENERISCHE TEASER (gestapelt) */
   const rich = pickRichGeneric(f);
   const plain = pickPlainGeneric(f);
 
@@ -195,9 +206,9 @@ export default function GenericBlock({ entry }: { entry: any }) {
         plain && <p className="opacity-90">{plain}</p>
       )}
 
-      {ctaLabel && ctaUrl && (
+      {ctaLabel && ctaHref && (
         <div className="mt-4">
-          <a className="inline-block rounded-xl px-4 py-2 border" href={ctaUrl}>
+          <a className="inline-block rounded-xl px-4 py-2 border" href={ctaHref}>
             {ctaLabel}
           </a>
         </div>
