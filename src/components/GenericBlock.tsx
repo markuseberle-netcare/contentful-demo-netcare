@@ -22,19 +22,28 @@ export default function GenericBlock({ entry }: { entry: any }) {
   const ctaUrl = f.ctaUrl || f.ctaLink || f.url || '';
 
   if (ct === 'componentHeroBanner') {
-    return (
-      <section className="rounded-2xl p-8 shadow border">
-        {imgUrl && <img src={imgUrl} alt={title} className="w-full h-96 object-cover rounded-xl mb-4" />}
-        <h2 className="text-3xl font-semibold mb-2">{title}</h2>
+  return (
+    <section className="col-span-full rounded-2xl p-0 shadow border"> {/* volle Breite */}
+      {imgUrl && (
+        <img
+          src={imgUrl}
+          alt={title}
+          className="w-full h-96 md:h-[480px] object-cover rounded-2xl"
+        />
+      )}
+      <div className="p-6">
+        <h2 className="text-3xl md:text-4xl font-semibold mb-2">{title}</h2>
         {subtitle && <p className="text-lg opacity-80 mb-3">{subtitle}</p>}
         {ctaLabel && ctaUrl && (
-          <a className="inline-block rounded-2xl px-4 py-2 border" href={ctaUrl}>
+          <a className="inline-block rounded-xl px-4 py-2 border" href={ctaUrl}>
             {ctaLabel}
           </a>
         )}
-      </section>
-    );
-  }
+      </div>
+    </section>
+  );
+}
+
 
   if (ct === 'componentTextBlock' && rich) {
     return (
