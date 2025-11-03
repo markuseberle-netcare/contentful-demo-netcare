@@ -36,7 +36,7 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-6xl p-6 grid gap-6 md:grid-cols-2">
-      {blocks.map((b: any) => renderBlock(b))}
-    </main>
+  {blocks.map((b: any) => <GenericBlock key={b?.sys?.id} entry={b} />)}
+</main>
   );
 }
