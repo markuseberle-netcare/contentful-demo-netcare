@@ -61,22 +61,38 @@ export default function GenericBlock({ entry }: { entry: any }) {
   }
 
   return (
-    <article className="rounded-2xl p-6 shadow border">
-      <h3 className="text-xl font-medium mb-2">{title || ct}</h3>
-      {imgUrl && <img src={imgUrl} alt={title} className="w-full h-48 object-cover rounded-xl mb-3" />}
-      {rich && (
-        <div className="prose max-w-none">
-          {documentToReactComponents(rich, {
-            renderNode: {
-              [INLINES.HYPERLINK]: (node, children) => (
-                <a href={(node.data as any).uri} className="underline">{children}</a>
-              ),
-              [BLOCKS.EMBEDDED_ASSET]: () => null,
-            },
-          })}
-        </div>
-      )}
-      {!rich && (f.summary || f.teaser) && <p className="opacity-80">{f.summary || f.teaser}</p>}
-    </article>
-  );
-}
+  <article className="rounded-2xl p-6 shadow border bg-black/20">
+    <h3 className="text-xl font-medium mb-2">{title || ct}</h3>
+
+    {imgUrl && (
+      <img
+        src={imgUrl}
+        alt={title}
+        className="w-full h-48 object-cover rounded-xl mb-3"
+      />
+    )}
+
+    {/* 🔹 Bodytext (Rich Text oder Plain Text) */}
+    {rich ? (
+      <div className="prose max-w-none">
+        {documentToReactComponents(rich, {
+          renderNode: {
+            [INLINES.HYPERLINK]: (node, children) => (
+              <a href={(node.data as any).uri} className="underline">
+                {children}
+              </a>
+            ),
+            [BLOCKS.EMBEDDED_ASSET]: () => null,
+          },
+        })}
+      </div>
+    ) : (
+      <>
+        {f.summary && <p className="opacity-90 mb-2">{f.summary}</p>}
+        {f.body && <p className="opacity-90 mb-2">{f.body}</p>}
+        {f.teaser && <p className="opacity-90 mb-2">{f.teaser}</p>}
+        {f.text && <p className="opacity-90 mb-2">{f.text}</p>}
+      </>
+    )}
+  </article>
+);
