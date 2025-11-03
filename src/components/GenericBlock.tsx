@@ -3,47 +3,15 @@
 import { BLOCKS, INLINES, Document } from '@contentful/rich-text-types';
 import { documentToReactComponents } from '@contentful/rich-text-react-renderer';
 
+// -------- Utils: Finder für Rich/Plain, inkl. Durchlauf verlinkter Entries --------
+
 function isRichDoc(val: any): val is Document {
   return !!val && typeof val === 'object' && val.nodeType === 'document';
 }
 
-function pickRich(f: any): Document | undefined {
-  // häufige Feldnamen im Learning Path
-  const keys = [
-    'body',
-    'content',
-    'copy',
-    'text',
-    'description',
-    'abstract',
-    'excerpt',
-    'richText',
-  ];
-  for (const k of keys) {
-    const v = f?.[k];
-    if (isRichDoc(v)) return v;
-  }
-  return undefined;
-}
-
-function pickPlain(f: any): string | undefined {
-  // falls kein RichText vorhanden ist
-  const keys = [
-    'summary',
-    'teaser',
-    'description',
-    'abstract',
-    'excerpt',
-    'body',
-    'text',
-    'copy',
-  ];
-  for (const k of keys) {
-    const v = f?.[k];
-    if (typeof v === 'string' && v.trim()) return v.trim();
-  }
-  return undefined;
-}
+// Alle üblichen Feldnamen, die im Learning Path für Text vorkommen
+const RICH_CANDIDATES = ['body', 'content', 'copy', 'text', 'description', 'abstract', 'excerpt', 'richText'];
+const PLAIN_CANDIDATES = ['summary', 'teaser', 'description', 'abstract', 'excerpt', 'body', 'text', 'copy'];
 
 function pickImageUrl(f: any): string | undefined {
   const candidates = [
@@ -64,12 +32,91 @@ function pickImageUrl(f: any): string | undefined {
   return undefined;
 }
 
+// Holt Rich-Text direkt aus Feldern
+function pickRichDirect(f: any): Document | undefined {
+  for (const k of RICH_CANDIDATES) {
+    const v = f?.[k];
+    if (isRichDoc(v)) return v;
+  }
+  return undefined;
+}
+
+// Holt Plain-Text direkt aus Feldern
+function pickPlainDirect(f: any): string | undefined {
+  for (const k of PLAIN_CANDIDATES) {
+    const v = f?.[k];
+    if (typeof v === 'string' && v.trim()) return v.trim();
+  }
+  return undefined;
+}
+
+// Sucht Rich-Text auch in verlinkten Entries/Arrays (eine Ebene tief)
+function pickRichFromLinks(f: any): Document | undefined {
+  const candidates: any[] = [];
+
+  // Alle Felder einsammeln, die wie Link-Entries aussehen (objekt mit .fields)
+  for (const key of Object.keys(f || {})) {
+    const val = f[key];
+    if (val?.fields) candidates.push(val);
+    if (Array.isArray(val)) {
+      for (const item of val) if (item?.fields) candidates.push(item);
+    }
+  }
+
+  for (const entry of candidates) {
+    // 1) Direkt in den Fields suchen
+    const direct = pickRichDirect(entry.fields);
+    if (direct) return direct;
+
+    // 2) Falls dort wieder Links/Arrays liegen, eine Ebene tiefer schauen
+    for (const innerKey of Object.keys(entry.fields || {})) {
+      const inner = entry.fields[innerKey];
+      if (isRichDoc(inner)) return inner;
+      if (inner?.fields) {
+        const d = pickRichDirect(inner.fields);
+        if (d) return d;
+      }
+      if (Array.isArray(inner)) {
+        for (const it of inner) {
+          if (isRichDoc(it)) return it;
+          if (it?.fields) {
+            const d2 = pickRichDirect(it.fields);
+            if (d2) return d2;
+          }
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+// Plain-Text auch aus verlinkten Entries/Arrays (eine Ebene tief)
+function pickPlainFromLinks(f: any): string | undefined {
+  const candidates: any[] = [];
+  for (const key of Object.keys(f || {})) {
+    const val = f[key];
+    if (val?.fields) candidates.push(val);
+    if (Array.isArray(val)) {
+      for (const item of val) if (item?.fields) candidates.push(item);
+    }
+  }
+  for (const entry of candidates) {
+    const direct = pickPlainDirect(entry.fields);
+    if (direct) return direct;
+  }
+  return undefined;
+}
+
 export default function GenericBlock({ entry }: { entry: any }) {
   const ct: string | undefined = entry?.sys?.contentType?.sys?.id;
   const f: any = entry?.fields || {};
 
   const imgUrl = pickImageUrl(f);
-  const rich: Document | undefined = pickRich(f);
+
+  // Rich/Plain zunächst direkt, dann via Links finden
+  const rich: Document | undefined = pickRichDirect(f) ?? pickRichFromLinks(f);
+  const plain: string | undefined = pickPlainDirect(f) ?? pickPlainFromLinks(f);
 
   const title: string =
     f?.title || f?.heading || f?.headline || f?.internalName || f?.pageName || '';
@@ -104,7 +151,6 @@ export default function GenericBlock({ entry }: { entry: any }) {
 
   // ============ DUPLEX (Bild + Text) ============
   if (ct === 'componentDuplex') {
-    const plain = pickPlain(f);
     return (
       <section className="rounded-2xl p-0 shadow border grid gap-4 md:grid-cols-2 overflow-hidden">
         {imgUrl && (
@@ -119,6 +165,7 @@ export default function GenericBlock({ entry }: { entry: any }) {
               {subtitle && <p className="opacity-80">{subtitle}</p>}
             </header>
           )}
+
           {rich ? (
             <div className="prose max-w-none">
               {documentToReactComponents(rich, {
@@ -135,6 +182,7 @@ export default function GenericBlock({ entry }: { entry: any }) {
           ) : (
             plain && <p className="opacity-90">{plain}</p>
           )}
+
           {ctaLabel && ctaUrl && (
             <div className="mt-4">
               <a className="inline-block rounded-xl px-4 py-2 border" href={ctaUrl}>
@@ -147,32 +195,28 @@ export default function GenericBlock({ entry }: { entry: any }) {
     );
   }
 
-  // ============ TEXTBLOCK (reiner Rich Text) ============
-  if (ct === 'componentTextBlock' && (rich || pickPlain(f))) {
-    const plain = pickPlain(f);
+  // ============ TEXTBLOCK ============
+  if (ct === 'componentTextBlock' && (rich || plain)) {
     return (
       <article className="rounded-2xl p-6 shadow border prose max-w-none">
         {title && <h3>{title}</h3>}
-        {rich ? (
-          documentToReactComponents(rich, {
-            renderNode: {
-              [INLINES.HYPERLINK]: (node, children) => (
-                <a href={(node.data as any).uri} className="underline">
-                  {children}
-                </a>
-              ),
-              [BLOCKS.EMBEDDED_ASSET]: () => null,
-            },
-          })
-        ) : (
-          plain && <p>{plain}</p>
-        )}
+        {rich
+          ? documentToReactComponents(rich, {
+              renderNode: {
+                [INLINES.HYPERLINK]: (node, children) => (
+                  <a href={(node.data as any).uri} className="underline">
+                    {children}
+                  </a>
+                ),
+                [BLOCKS.EMBEDDED_ASSET]: () => null,
+              },
+            })
+          : <p>{plain}</p>}
       </article>
     );
   }
 
-  // ============ GENERISCHER FALL (z. B. "Teaser"/InfoBlock) ============
-  const plain = pickPlain(f);
+  // ============ GENERISCH (z. B. Teaser/InfoBlock) ============
   return (
     <article className="rounded-2xl p-6 shadow border bg-black/20">
       {(title || ct) && <h3 className="text-xl font-medium mb-2">{title || ct}</h3>}
