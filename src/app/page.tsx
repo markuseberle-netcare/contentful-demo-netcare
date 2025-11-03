@@ -35,7 +35,7 @@ export default async function Home() {
   const blocks: any[] = Array.isArray(rawBlocks) ? rawBlocks : [];
 
   return (
-    <main className="grid gap-6">
+    <main className="mx-auto max-w-6xl p-6 grid gap-6 md:grid-cols-2">
       {blocks.map((b: any) => renderBlock(b))}
     </main>
   );
